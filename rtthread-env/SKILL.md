@@ -27,8 +27,8 @@ description: Use when installing, upgrading, activating, or troubleshooting RT-T
 执行本 skill 前先确认：
 
 - 主机平台：Linux、Windows PowerShell、WSL、macOS 或容器。
-- 网络位置：安装 Env 前先检测公网 IP；中国大陆使用 `--gitee` 和清华
-  PyPI 源，其他地区使用默认 GitHub/PyPI。
+- 网络位置：安装 Env 前先检测公网 IP；中国大陆下载 Env 时使用 `--gitee`。
+  Windows 首次激活会再次检测公网 IP，并自动选择清华或默认 PyPI 源。
 - RT-Thread 版本和目标工程路径。
 - 工具链类型与路径，如 `arm-none-eabi-gcc` 的 `bin` 目录。
 - 是否允许修改 shell profile、PowerShell profile 或 `~/.env`。
@@ -47,9 +47,10 @@ description: Use when installing, upgrading, activating, or troubleshooting RT-T
 ## Workflow
 
 1. 默认安装最新 Env git 仓库版本；仅在用户明确要求旧 Env 时切到 v1.5.x。
-2. 安装或升级 Env 前，先运行对应平台的网络脚本；中国大陆机器必须使用
-   `--gitee` 和清华 PyPI 源。
-3. 安装 Env 时优先使用官方安装脚本；无官方脚本的平台按手动目录结构安装。
+2. 安装或升级 Env 前，先运行对应平台的网络脚本；中国大陆机器下载 Env
+   时必须使用 `--gitee`，不要现场改写下载的官方安装脚本。
+3. Ubuntu / WSL、Windows、macOS、Arch Linux 和 openSUSE 优先使用对应的
+   官方安装脚本；无官方脚本的平台按手动目录结构安装。
 4. 升级 Env 时同时更新 `~/.env/tools/scripts`、`~/.env/packages/packages`
    和 `~/.env/packages/sdk`，并用 `git pull --ff-only` 避免覆盖本地修改。
 5. 激活 Env 后检查 `scons`、`pkgs`、Python 依赖和 packages index。
@@ -82,18 +83,21 @@ scons --pyconfig-silent
 scons
 ```
 
-Windows 使用 `~\.env\env.ps1` 替换 `source ~/.env/env.sh`。如需导出工程，
+Windows 首次运行 `~\.env\env.ps1` 时会创建 `~\.env\.venv`、升级 pip
+并安装本地 Env scripts；必须等待该过程成功后再执行构建检查。如需导出工程，
 再运行 `scons --target=vscode`、`scons --target=cmake` 或
 `scons --target=mdk5`。
 
 ## Done Checklist
 
 - [ ] 已默认选择最新 Env git 仓库版本，或按用户要求切到旧 Env。
-- [ ] 安装或升级前已运行网络检测；中国大陆使用 `--gitee` 和清华 PyPI 源。
+- [ ] 安装或升级前已运行网络检测；中国大陆下载 Env 时使用 `--gitee`。
+- [ ] 未改写下载的官方安装脚本；需要更换 PyPI 源时修改用户侧激活配置。
 - [ ] Env scripts 位于 `~/.env/tools/scripts` 并可执行。
 - [ ] packages index 位于 `~/.env/packages/packages`，SDK 位于
       `~/.env/packages/sdk`。
 - [ ] Env 已激活，`scons`、`pkgs`、Python 依赖可用。
+- [ ] Windows 的 `~/.env/.venv` 已在首次激活时成功创建并安装 Env scripts。
 - [ ] 升级流程已更新 Env scripts、packages index 和 SDK。
 - [ ] EBuild 工程包含 `SConstruct`、`SConscript`、`Kconfig`、
       `proj_config.py` 和 hello 程序。
