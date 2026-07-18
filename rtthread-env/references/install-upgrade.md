@@ -1,9 +1,30 @@
 # Env Install and Upgrade
 
-## Network Setup
+## Source Verification
 
-Before downloading, installing, or upgrading Env, use the bundled network
-script:
+Treat the current local Env checkout as the installation source of truth.
+Before giving installation commands, inspect its revision and all mirror
+branches without modifying that checkout:
+
+```sh
+git -C ~/.env/tools/scripts rev-parse HEAD origin/master
+git -C ~/.env/tools/scripts status --short -- \
+    README.md 'install_*' 'touch_env.*' env.ps1
+rg -n -- '--gitee|PIP_SOURCE|ipinfo' \
+    ~/.env/tools/scripts/README.md \
+    ~/.env/tools/scripts/install_* \
+    ~/.env/tools/scripts/touch_env.* \
+    ~/.env/tools/scripts/env.ps1
+```
+
+If `HEAD` differs from `origin/master` or a relevant tracked file is modified,
+determine which revision the user wants before using its behavior as current.
+Keep the semantic summary below aligned with the inspected scripts.
+
+## Installer Mirror Selection
+
+Before downloading or installing Env, use the bundled helper to select the
+installer and Git clone mirror:
 
 ```sh
 source rtthread-env/scripts/env-network.sh
@@ -13,17 +34,47 @@ source rtthread-env/scripts/env-network.sh
 . .\rtthread-env\scripts\env-network.ps1
 ```
 
-The script sets:
+The helper sets only `RTT_ENV_MIRROR`:
 
 - `RTT_ENV_MIRROR="--gitee"` when public IP is in China mainland.
-- `PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple` in China mainland.
-- `PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn` in China mainland.
+- `RTT_ENV_MIRROR=""` for other regions or when detection fails.
 
-If the user already knows the machine is in China mainland, set
-`RTT_ENV_REGION=CN` before loading the script. Use `RTT_ENV_MIRROR` to select
-the Git hosting mirror. The Windows installer and first-activation script may
-select their own pip index; do not rewrite a downloaded official installer to
-change it.
+Override region detection when the location is already known:
+
+```sh
+export RTT_ENV_REGION=CN
+source rtthread-env/scripts/env-network.sh
+```
+
+```powershell
+$env:RTT_ENV_REGION = "CN"
+. .\rtthread-env\scripts\env-network.ps1
+```
+
+These helpers do not set `PIP_INDEX_URL`, install Python packages, or reproduce
+the Windows activation script's PyPI selection.
+
+## `--gitee` Semantics
+
+The current Env scripts treat `--gitee` as a positional installer argument,
+not as a global Env setting. It is recognized only as the first argument.
+
+- On Ubuntu, macOS, Arch Linux, and openSUSE, `--gitee` selects the Gitee copy
+  of `touch_env.sh`. The called `touch_env.sh --gitee` then clones packages,
+  SDK, and Env scripts from Gitee. It does not select a pip index.
+- On Windows, `install_windows.ps1 --gitee` additionally selects the npm mirror
+  fallback for Git for Windows and the Aliyun pip index used by that installer.
+  It then runs `touch_env.ps1 --gitee` to clone the three Git repositories from
+  Gitee.
+- Windows `~/.env/env.ps1` does not read `--gitee`. On first activation it
+  detects the public IP independently and selects Tsinghua or default PyPI for
+  the venv installation.
+- Upgrade commands do not accept `--gitee`; each `git pull` uses the repository's
+  configured remote.
+
+These statements were verified against local Env `master` at commit
+`65f6991045d3d0c030080ba5b9489cc91f63e893`. Do not infer a different meaning
+for `--gitee`, and do not rewrite a downloaded official installer.
 
 All official installers eventually run `touch_env.sh` or `touch_env.ps1`. If
 `~/.env` already exists, that script asks whether to delete and recreate the
@@ -46,7 +97,11 @@ else
 fi
 wget "$url" -O install_ubuntu.sh
 chmod 755 install_ubuntu.sh
-./install_ubuntu.sh $RTT_ENV_MIRROR
+if [ "$RTT_ENV_MIRROR" = "--gitee" ]; then
+    ./install_ubuntu.sh --gitee
+else
+    ./install_ubuntu.sh
+fi
 rm install_ubuntu.sh
 ```
 
@@ -90,7 +145,11 @@ else
 fi
 wget "$url" -O "$installer"
 chmod 755 "$installer"
-./"$installer" $RTT_ENV_MIRROR
+if [ "$RTT_ENV_MIRROR" = "--gitee" ]; then
+    ./"$installer" --gitee
+else
+    ./"$installer"
+fi
 rm "$installer"
 ```
 
@@ -106,7 +165,11 @@ else
 fi
 curl -fL "$url" -o "$installer"
 chmod 755 "$installer"
-./"$installer" $RTT_ENV_MIRROR
+if [ "$RTT_ENV_MIRROR" = "--gitee" ]; then
+    ./"$installer" --gitee
+else
+    ./"$installer"
+fi
 rm "$installer"
 ```
 
@@ -137,9 +200,9 @@ if ($script:RTT_ENV_MIRROR -eq "--gitee") {
 ```
 
 The installer may install Python or Git and ask the user to close PowerShell
-and rerun it. Follow that instruction before continuing. It also supports an
-optional second positional argument, `-y`, which skips only the final
-completion pause:
+and rerun it. Follow that instruction before continuing. It also supports
+`-y` only as the second positional argument; it skips only the final completion
+pause:
 
 ```powershell
 .\install_windows.ps1 --gitee -y # China mainland
@@ -157,7 +220,7 @@ and SDK are installed at their latest default-branch versions.
 
 ```sh
 source rtthread-env/scripts/env-network.sh
-pip_install --user -U pip scons requests tqdm kconfiglib pyyaml
+python3 -m pip install --user -U pip scons requests tqdm kconfiglib pyyaml
 mkdir -p ~/.env/local_pkgs ~/.env/packages ~/.env/tools
 if [ "$RTT_ENV_MIRROR" = "--gitee" ]; then
     pkg_url="https://gitee.com/RT-Thread-Mirror/packages.git"
@@ -184,7 +247,6 @@ Update Env scripts, packages index, and SDK. Stop and report if a repo has local
 changes.
 
 ```sh
-source rtthread-env/scripts/env-network.sh
 for repo in "$HOME/.env/tools/scripts" \
             "$HOME/.env/packages/packages" \
             "$HOME/.env/packages/sdk"; do
@@ -192,11 +254,10 @@ for repo in "$HOME/.env/tools/scripts" \
     git -C "$repo" status --short
     git -C "$repo" pull --ff-only
 done
-pip_install --user -U scons requests tqdm kconfiglib pyyaml
+python3 -m pip install --user -U scons requests tqdm kconfiglib pyyaml
 ```
 
 ```powershell
-. .\rtthread-env\scripts\env-network.ps1
 $repos = @(
     "$HOME\.env\tools\scripts",
     "$HOME\.env\packages\packages",
@@ -208,7 +269,7 @@ foreach ($repo in $repos) {
         git -C $repo pull --ff-only
     }
 }
-Invoke-PipInstall -U scons requests tqdm kconfiglib pyyaml
+python -m pip install -U scons requests tqdm kconfiglib pyyaml
 ```
 
 After upgrading, reactivate Env and run `scons --menuconfig` or
@@ -231,11 +292,10 @@ printf '%s\n' 'source ~/.env/env.sh' >> ~/.bashrc
 Python venv activation when Env scripts need it:
 
 ```sh
-source rtthread-env/scripts/env-network.sh
 python3 -m venv ~/.env/.venv
 . ~/.env/.venv/bin/activate
-pip_install -U pip
-pip_install ~/.env/tools/scripts
+python3 -m pip install -U pip
+python3 -m pip install ~/.env/tools/scripts
 source ~/.env/env.sh
 ```
 

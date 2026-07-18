@@ -13,8 +13,9 @@ description: Use when installing, upgrading, activating, or troubleshooting RT-T
 
 ## Env Version Policy
 
-- 安装 Env 默认使用最新版本：取 `RT-Thread/env` git 仓库当前默认分支，
-  中国大陆网络取 Gitee mirror 当前默认分支。
+- 安装 Env 默认使用最新版本：取 `RT-Thread/env` git 仓库当前默认分支。
+  中国大陆按当前官方 README 下载 Gitee installer，并把 `--gitee` 作为安装
+  脚本的第一个参数。
 - 默认使用 Env v2.0 风格流程：Python 3、`kconfiglib` 和 Env scripts。
 - 只有用户明确要求维护旧 RT-Thread 工程或旧 Env 环境时，才选择 Env
   v1.5.x；此时不要安装或保留 `kconfiglib`，因为 v1.5.x 与
@@ -27,34 +28,38 @@ description: Use when installing, upgrading, activating, or troubleshooting RT-T
 执行本 skill 前先确认：
 
 - 主机平台：Linux、Windows PowerShell、WSL、macOS 或容器。
-- 网络位置：安装 Env 前先检测公网 IP；中国大陆下载 Env 时使用 `--gitee`。
-  Windows 首次激活会再次检测公网 IP，并自动选择清华或默认 PyPI 源。
+- 网络位置：安装 Env 前先检测公网 IP；中国大陆使用 Gitee installer，并把
+  `--gitee` 作为第一个安装参数。该参数不控制 Windows 首次激活的 PyPI 源。
 - RT-Thread 版本和目标工程路径。
 - 工具链类型与路径，如 `arm-none-eabi-gcc` 的 `bin` 目录。
 - 是否允许修改 shell profile、PowerShell profile 或 `~/.env`。
 
 ## File Map
 
+- 安装行为基准：先读取 `~/.env/tools/scripts/README.md`、目标平台的
+  `install_*`、`touch_env.*`，以及 Windows 的 `env.ps1`。
 - 安装、升级、激活 Env：读取
   [references/install-upgrade.md](references/install-upgrade.md)。
-- Linux / WSL / macOS 网络检测和 pip 包装：按需使用
+- Linux / WSL / macOS 安装镜像检测：按需使用
   [scripts/env-network.sh](scripts/env-network.sh)。
-- Windows PowerShell 网络检测和 pip 包装：按需使用
+- Windows PowerShell 安装镜像检测：按需使用
   [scripts/env-network.ps1](scripts/env-network.ps1)。
 - EBuild 工程、组件脚本、级联 `SConscript` 模板：读取
   [references/ebuild.md](references/ebuild.md)。
 
 ## Workflow
 
-1. 默认安装最新 Env git 仓库版本；仅在用户明确要求旧 Env 时切到 v1.5.x。
-2. 安装或升级 Env 前，先运行对应平台的网络脚本；中国大陆机器下载 Env
-   时必须使用 `--gitee`，不要现场改写下载的官方安装脚本。
-3. Ubuntu / WSL、Windows、macOS、Arch Linux 和 openSUSE 优先使用对应的
+1. 安装前检查 `~/.env/tools/scripts` 当前提交，并复核 README、目标安装脚本、
+   `touch_env.*` 和 Windows `env.ps1` 中的镜像行为。
+2. 默认安装最新 Env git 仓库版本；仅在用户明确要求旧 Env 时切到 v1.5.x。
+3. 安装 Env 前运行对应平台的网络脚本；中国大陆按当前官方 README 下载
+   Gitee installer，并把 `--gitee` 作为第一个参数。其他地区不传该参数。
+4. Ubuntu / WSL、Windows、macOS、Arch Linux 和 openSUSE 优先使用对应的
    官方安装脚本；无官方脚本的平台按手动目录结构安装。
-4. 升级 Env 时同时更新 `~/.env/tools/scripts`、`~/.env/packages/packages`
+5. 升级 Env 时同时更新 `~/.env/tools/scripts`、`~/.env/packages/packages`
    和 `~/.env/packages/sdk`，并用 `git pull --ff-only` 避免覆盖本地修改。
-5. 激活 Env 后检查 `scons`、`pkgs`、Python 依赖和 packages index。
-6. 创建 EBuild 工程或脚本时，先读取 `references/ebuild.md`，再生成文件。
+6. 激活 Env 后检查 `scons`、`pkgs`、Python 依赖和 packages index。
+7. 创建 EBuild 工程或脚本时，先读取 `references/ebuild.md`，再生成文件。
 
 ## Env Directory
 
@@ -91,7 +96,10 @@ Windows 首次运行 `~\.env\env.ps1` 时会创建 `~\.env\.venv`、升级 pip
 ## Done Checklist
 
 - [ ] 已默认选择最新 Env git 仓库版本，或按用户要求切到旧 Env。
-- [ ] 安装或升级前已运行网络检测；中国大陆下载 Env 时使用 `--gitee`。
+- [ ] 已根据 `~/.env/tools/scripts` 当前提交复核安装和镜像语义。
+- [ ] 安装前已运行镜像检测；中国大陆使用 Gitee installer 和 `--gitee`，
+      其他地区使用 GitHub installer 且不传该参数。
+- [ ] 未把 `--gitee` 解释为统一 PyPI 开关；Windows 首次激活独立选择 PyPI。
 - [ ] 未改写下载的官方安装脚本；需要更换 PyPI 源时修改用户侧激活配置。
 - [ ] Env scripts 位于 `~/.env/tools/scripts` 并可执行。
 - [ ] packages index 位于 `~/.env/packages/packages`，SDK 位于

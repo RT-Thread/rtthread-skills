@@ -14,27 +14,17 @@ except Exception:
 PY
 )}"
 
+    # This value is only the official installer's first argument, not a pip setting.
     if [ "$country" = "CN" ]; then
         RTT_ENV_MIRROR="--gitee"
-        PIP_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple"
-        PIP_TRUSTED_HOST="pypi.tuna.tsinghua.edu.cn"
+        mirror="gitee"
     else
         RTT_ENV_MIRROR=""
-        PIP_INDEX_URL=""
-        PIP_TRUSTED_HOST=""
+        mirror="github"
     fi
 
-    echo "RT-Thread Env region: ${country:-unknown}"
-    export RTT_ENV_MIRROR PIP_INDEX_URL PIP_TRUSTED_HOST
-}
-
-pip_install() {
-    if [ -n "$PIP_INDEX_URL" ]; then
-        python3 -m pip install -i "$PIP_INDEX_URL" \
-            --trusted-host "$PIP_TRUSTED_HOST" "$@"
-    else
-        python3 -m pip install "$@"
-    fi
+    echo "RT-Thread Env region: ${country:-unknown}, installer mirror: $mirror"
+    export RTT_ENV_MIRROR
 }
 
 detect_env_region
