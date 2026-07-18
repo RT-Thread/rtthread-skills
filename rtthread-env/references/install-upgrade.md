@@ -2,108 +2,72 @@
 
 ## Source Verification
 
-Treat the current local Env checkout as the installation source of truth.
-Before giving installation commands, inspect its revision and all mirror
-branches without modifying that checkout:
+Treat the current `RT-Thread/env` default-branch README as the installation
+source of truth. When a local checkout is available, inspect it without
+modifying it before giving installation commands:
 
 ```sh
-git -C ~/.env/tools/scripts rev-parse HEAD origin/master
-git -C ~/.env/tools/scripts status --short -- \
+env_repo=/path/to/RT-Thread/env
+git -C "$env_repo" rev-parse HEAD origin/master
+git -C "$env_repo" status --short -- \
     README.md 'install_*' 'touch_env.*' env.ps1
-rg -n -- '--gitee|PIP_SOURCE|ipinfo' \
-    ~/.env/tools/scripts/README.md \
-    ~/.env/tools/scripts/install_* \
-    ~/.env/tools/scripts/touch_env.* \
-    ~/.env/tools/scripts/env.ps1
+rg -n -- 'gitee|github|PIP_SOURCE|ipinfo|set-url' \
+    "$env_repo/README.md" \
+    "$env_repo"/install_* \
+    "$env_repo"/touch_env.* \
+    "$env_repo/env.ps1"
 ```
 
 If `HEAD` differs from `origin/master` or a relevant tracked file is modified,
 determine which revision the user wants before using its behavior as current.
 Keep the semantic summary below aligned with the inspected scripts.
 
-## Installer Mirror Selection
+## Installer Download Selection
 
-Before downloading or installing Env, use the bundled helper to select the
-installer and Git clone mirror:
+The user's network location selects only where the installer itself is
+downloaded:
 
-```sh
-source rtthread-env/scripts/env-network.sh
-```
+- Linux in China mainland: use the Gitee installer URL listed by the README.
+- Linux in other regions: use the GitHub installer URL listed by the README.
+- Windows: use the GitHub installer URL listed by the README.
 
-```powershell
-. .\rtthread-env\scripts\env-network.ps1
-```
+Run the downloaded installer without `--gitee` or any other mirror argument.
+The current installer and `touch_env` scripts detect the network region and
+select the mirror for subsequent downloads. After cloning Env, packages, and
+the SDK, `touch_env` sets their `origin` remotes to GitHub.
 
-The helper sets only `RTT_ENV_MIRROR`:
-
-- `RTT_ENV_MIRROR="--gitee"` when public IP is in China mainland.
-- `RTT_ENV_MIRROR=""` for other regions or when detection fails.
-
-Override region detection when the location is already known:
-
-```sh
-export RTT_ENV_REGION=CN
-source rtthread-env/scripts/env-network.sh
-```
-
-```powershell
-$env:RTT_ENV_REGION = "CN"
-. .\rtthread-env\scripts\env-network.ps1
-```
-
-These helpers do not set `PIP_INDEX_URL`, install Python packages, or reproduce
-the Windows activation script's PyPI selection.
-
-## `--gitee` Semantics
-
-The current Env scripts treat `--gitee` as a positional installer argument,
-not as a global Env setting. It is recognized only as the first argument.
-
-- On Ubuntu, macOS, Arch Linux, and openSUSE, `--gitee` selects the Gitee copy
-  of `touch_env.sh`. The called `touch_env.sh --gitee` then clones packages,
-  SDK, and Env scripts from Gitee. It does not select a pip index.
-- On Windows, `install_windows.ps1 --gitee` additionally selects the npm mirror
-  fallback for Git for Windows and the Aliyun pip index used by that installer.
-  It then runs `touch_env.ps1 --gitee` to clone the three Git repositories from
-  Gitee.
-- Windows `~/.env/env.ps1` does not read `--gitee`. On first activation it
-  detects the public IP independently and selects Tsinghua or default PyPI for
-  the venv installation.
-- Upgrade commands do not accept `--gitee`; each `git pull` uses the repository's
-  configured remote.
-
-These statements were verified against local Env `master` at commit
-`65f6991045d3d0c030080ba5b9489cc91f63e893`. Do not infer a different meaning
-for `--gitee`, and do not rewrite a downloaded official installer.
+Linux installers fall back to GitHub when region detection fails in a
+non-interactive session. In an interactive session, Ubuntu, Arch Linux, and
+openSUSE installers ask whether to use Gitee. Windows falls back to GitHub when
+region detection fails.
 
 All official installers eventually run `touch_env.sh` or `touch_env.ps1`. If
-`~/.env` already exists, that script asks whether to delete and recreate the
+`~/.env` already exists, `touch_env` asks whether to delete and recreate the
 whole directory. Do not answer yes automatically. Treat an existing Env as an
 upgrade unless the user explicitly approves recreation after preserving local
 packages and local changes.
 
 ## Ubuntu / WSL Install
 
-Default install means latest Env: download the installer from the current
-`RT-Thread/env` default install entry, or its Gitee mirror. Do not pin an old
-Env branch unless the user explicitly asks for legacy Env.
+Default install means latest Env. Choose one installer download command based
+on the user's network location. Do not pin an old Env branch unless the user
+explicitly asks for legacy Env.
 
 ```sh
-source rtthread-env/scripts/env-network.sh
-if [ "$RTT_ENV_MIRROR" = "--gitee" ]; then
-    url="https://gitee.com/RT-Thread-Mirror/env/raw/master/install_ubuntu.sh"
-else
-    url="https://raw.githubusercontent.com/RT-Thread/env/master/install_ubuntu.sh"
-fi
-wget "$url" -O install_ubuntu.sh
-chmod 755 install_ubuntu.sh
-if [ "$RTT_ENV_MIRROR" = "--gitee" ]; then
-    ./install_ubuntu.sh --gitee
-else
-    ./install_ubuntu.sh
-fi
+# China mainland network:
+wget https://gitee.com/RT-Thread-Mirror/env/raw/master/install_ubuntu.sh
+
+# Other regions:
+wget https://raw.githubusercontent.com/RT-Thread/env/master/install_ubuntu.sh
+
+chmod 777 install_ubuntu.sh
+./install_ubuntu.sh
 rm install_ubuntu.sh
 ```
+
+Run only one of the two `wget` commands. The installer automatically chooses
+the mirror used to download `touch_env.sh`; `touch_env.sh` independently
+chooses the clone mirror.
 
 The official script installs Python3, pip, gcc, git, ncurses dependencies,
 `scons`, `requests`, `tqdm`, `kconfiglib`, `pyyaml`, and creates:
@@ -136,40 +100,26 @@ Select the installer that matches the host:
 For Arch Linux or openSUSE:
 
 ```sh
-source rtthread-env/scripts/env-network.sh
 installer=install_arch.sh # Use install_suse.sh on openSUSE.
-if [ "$RTT_ENV_MIRROR" = "--gitee" ]; then
-    url="https://gitee.com/RT-Thread-Mirror/env/raw/master/$installer"
-else
-    url="https://raw.githubusercontent.com/RT-Thread/env/master/$installer"
-fi
+# Use Gitee in China mainland; use GitHub in other regions.
+url="https://raw.githubusercontent.com/RT-Thread/env/master/$installer"
+# url="https://gitee.com/RT-Thread-Mirror/env/raw/master/$installer"
 wget "$url" -O "$installer"
-chmod 755 "$installer"
-if [ "$RTT_ENV_MIRROR" = "--gitee" ]; then
-    ./"$installer" --gitee
-else
-    ./"$installer"
-fi
+chmod 777 "$installer"
+./"$installer"
 rm "$installer"
 ```
 
 For macOS, use `curl` because it is available by default:
 
 ```sh
-source rtthread-env/scripts/env-network.sh
 installer=install_macos.sh
-if [ "$RTT_ENV_MIRROR" = "--gitee" ]; then
-    url="https://gitee.com/RT-Thread-Mirror/env/raw/master/$installer"
-else
-    url="https://raw.githubusercontent.com/RT-Thread/env/master/$installer"
-fi
+# Use Gitee in China mainland; use GitHub in other regions.
+url="https://raw.githubusercontent.com/RT-Thread/env/master/$installer"
+# url="https://gitee.com/RT-Thread-Mirror/env/raw/master/$installer"
 curl -fL "$url" -o "$installer"
-chmod 755 "$installer"
-if [ "$RTT_ENV_MIRROR" = "--gitee" ]; then
-    ./"$installer" --gitee
-else
-    ./"$installer"
-fi
+chmod 777 "$installer"
+./"$installer"
 rm "$installer"
 ```
 
@@ -184,33 +134,21 @@ Afterward, normal PowerShell is enough.
 Default install uses the installer from the current default branch.
 
 ```powershell
-. .\rtthread-env\scripts\env-network.ps1
-if ($script:RTT_ENV_MIRROR -eq "--gitee") {
-    $url = "https://gitee.com/RT-Thread-Mirror/env/raw/master/install_windows.ps1"
-} else {
-    $url = "https://raw.githubusercontent.com/RT-Thread/env/master/install_windows.ps1"
-}
+$url = "https://raw.githubusercontent.com/RT-Thread/env/master/install_windows.ps1"
 wget $url -O install_windows.ps1
 set-executionpolicy remotesigned
-if ($script:RTT_ENV_MIRROR -eq "--gitee") {
-    .\install_windows.ps1 --gitee
-} else {
-    .\install_windows.ps1
-}
+.\install_windows.ps1
 ```
+
+The installer detects the region itself and selects its Git, pip, `touch_env`,
+packages, and SDK download mirrors. Do not pass a mirror argument. The official
+README also warns that antivirus software may terminate the installation; any
+temporary security-policy change must follow the user's organization policy.
 
 The installer may install Python or Git and ask the user to close PowerShell
 and rerun it. Follow that instruction before continuing. It also supports
-`-y` only as the second positional argument; it skips only the final completion
-pause:
-
-```powershell
-.\install_windows.ps1 --gitee -y # China mainland
-.\install_windows.ps1 "" -y      # Other regions
-```
-
-The `-y` option does not answer the prompt for an existing `~/.env`; never use
-it as permission to replace an existing installation.
+an internal unattended completion mode that is not part of the documented
+README installation interface; do not rely on it.
 
 ## Other Linux Manual Install
 
@@ -219,10 +157,10 @@ It clones the current default branch with `--depth=1`, so Env, packages index,
 and SDK are installed at their latest default-branch versions.
 
 ```sh
-source rtthread-env/scripts/env-network.sh
 python3 -m pip install --user -U pip scons requests tqdm kconfiglib pyyaml
 mkdir -p ~/.env/local_pkgs ~/.env/packages ~/.env/tools
-if [ "$RTT_ENV_MIRROR" = "--gitee" ]; then
+download_site=github # Use gitee in China mainland.
+if [ "$download_site" = gitee ]; then
     pkg_url="https://gitee.com/RT-Thread-Mirror/packages.git"
     sdk_url="https://gitee.com/RT-Thread-Mirror/sdk.git"
     env_url="https://gitee.com/RT-Thread-Mirror/env.git"
@@ -234,6 +172,12 @@ fi
 git clone "$pkg_url" ~/.env/packages/packages --depth=1
 git clone "$sdk_url" ~/.env/packages/sdk --depth=1
 git clone "$env_url" ~/.env/tools/scripts --depth=1
+git -C ~/.env/packages/packages remote set-url origin \
+    https://github.com/RT-Thread/packages.git
+git -C ~/.env/packages/sdk remote set-url origin \
+    https://github.com/RT-Thread/sdk.git
+git -C ~/.env/tools/scripts remote set-url origin \
+    https://github.com/RT-Thread/env.git
 printf '%s\n' 'source "$PKGS_DIR/packages/Kconfig"' > ~/.env/packages/Kconfig
 user_base="$(python3 -m site --user-base)"
 printf '%s\n' \
