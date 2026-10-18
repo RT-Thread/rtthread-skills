@@ -1,9 +1,22 @@
 ---
 name: rtthread-create-bsp
-description: Use when creating a new RT-Thread BSP from local chip datasheets and optional vendor driver libraries, with minimum kernel plus UART plus shell bring-up under rt-thread/bsp.
+description: >-
+  Use only when the user explicitly invokes `rtthread-create-bsp` (for example,
+  `$rtthread-create-bsp`), gives a command or instruction to use this skill, or
+  directly names this skill as required. Do not auto-trigger merely because a
+  request matches RT-Thread BSP creation. When invoked, create a new BSP from
+  local chip datasheets and optional vendor drivers, with minimum kernel, UART,
+  and shell bring-up under rt-thread/bsp.
 ---
 
 # RT-Thread Create BSP
+
+## Trigger Policy
+
+- 仅当用户显式调用 `$rtthread-create-bsp`、下达使用该 skill 的命令或指令，
+  或直接点名要求使用 `rtthread-create-bsp` 时，才执行本 skill。
+- 即使请求内容与 RT-Thread BSP 创建完全匹配，只要没有上述显式要求，也不得
+  自动调用本 skill。
 
 ## Role
 
