@@ -1,9 +1,22 @@
 ---
 name: rtthread-create-pkg
-description: Use when creating a new RT-Thread package that follows community naming and layering rules, with default inc/src layout and package-local Kconfig for easier management.
+description: >-
+  Use only when the user explicitly invokes `rtthread-create-pkg` (for example,
+  `$rtthread-create-pkg`), gives a command or instruction to use this skill, or
+  directly names this skill as required. Do not auto-trigger merely because a
+  request matches RT-Thread package creation. When invoked, create a package
+  that follows community naming and layering rules, with an inc/src layout and
+  package-local Kconfig.
 ---
 
 # RT-Thread Create Package
+
+## Trigger Policy
+
+- 仅当用户显式调用 `$rtthread-create-pkg`、下达使用该 skill 的命令或指令，
+  或直接点名要求使用 `rtthread-create-pkg` 时，才执行本 skill。
+- 即使请求内容与 RT-Thread 软件包创建完全匹配，只要没有上述显式要求，也不得
+  自动调用本 skill。
 
 ## Role
 

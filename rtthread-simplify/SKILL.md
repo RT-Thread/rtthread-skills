@@ -1,9 +1,22 @@
 ---
 name: rtthread-simplify
-description: Use when simplifying RT-Thread C code or modules — review the target for redundancy and over-design, propose a plan to cut code while keeping it clear and maintainable, then apply changes only after the user confirms. Requires an explicit target; stops and asks when none is given.
+description: >-
+  Use only when the user explicitly invokes `rtthread-simplify` (for example,
+  `$rtthread-simplify`), gives a command or instruction to use this skill, or
+  directly names this skill as required. Do not auto-trigger merely because a
+  request asks to simplify RT-Thread code. When invoked, review an explicit
+  target, propose behavior-preserving simplifications, and apply them only after
+  user confirmation.
 ---
 
 # RT-Thread Simplify
+
+## Trigger Policy
+
+- 仅当用户显式调用 `$rtthread-simplify`、下达使用该 skill 的命令或指令，或
+  直接点名要求使用 `rtthread-simplify` 时，才执行本 skill。
+- 即使请求内容是简化 RT-Thread C 代码，只要没有上述显式要求，也不得自动调用
+  本 skill。
 
 ## Role
 

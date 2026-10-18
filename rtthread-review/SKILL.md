@@ -1,9 +1,21 @@
 ---
 name: rtthread-review
-description: Use when reviewing RT-Thread C code for naming style, portability, resource safety, and framework compliance.
+description: >-
+  Use only when the user explicitly invokes `rtthread-review` (for example,
+  `$rtthread-review`), gives a command or instruction to use this skill, or
+  directly names this skill as required. Do not auto-trigger merely because a
+  request asks for an RT-Thread code review. When invoked, review C code for
+  naming, portability, resource safety, and framework compliance.
 ---
 
 # RT-Thread Review
+
+## Trigger Policy
+
+- 仅当用户显式调用 `$rtthread-review`、下达使用该 skill 的命令或指令，或直接
+  点名要求使用 `rtthread-review` 时，才执行本 skill。
+- 即使请求内容是 RT-Thread C 代码 review，只要没有上述显式要求，也不得自动
+  调用本 skill。
 
 ## Role
 

@@ -1,9 +1,22 @@
 ---
 name: rtthread-git-commit
-description: Use when preparing RT-Thread related commits and you need concise module-scoped commit messages that follow community style.
+description: >-
+  Use only when the user explicitly invokes `rtthread-git-commit` (for example,
+  `$rtthread-git-commit`), gives a command or instruction to use this skill, or
+  directly names this skill as required. Do not auto-trigger merely because a
+  request concerns RT-Thread commits. When invoked, check the current branch,
+  confirm a commit mode with the user, and prepare concise, module-scoped
+  commit messages that follow community style.
 ---
 
 # RT-Thread Git Commit
+
+## Trigger Policy
+
+- 仅当用户显式调用 `$rtthread-git-commit`、下达使用该 skill 的命令或指令，
+  或直接点名要求使用 `rtthread-git-commit` 时，才执行本 skill。
+- 即使请求内容与 RT-Thread 提交准备完全匹配，只要没有上述显式要求，也不得
+  自动调用本 skill。
 
 ## Role
 
@@ -12,23 +25,41 @@ description: Use when preparing RT-Thread related commits and you need concise m
 ## Goal
 
 分析用户的修改内容，将其拆分为多个语义独立的提交块，并生成符合
-RT-Thread 风格的 commit message。只有用户明确要求提交时，才逐个执行
-`git add` 和 `git commit`。
+RT-Thread 风格的 commit message。执行提交前必须先确认当前分支，并与
+用户确认采用哪种提交方式；只有用户明确要求提交后，才执行 `git add`
+和 `git commit`。
+
+默认期望以非主干分支提交，再推送分支并通过 PR/MR review 后合并，避免
+直接在主干分支上累积未经评审的提交。
 
 ## 分块提交流程
 
 当用户调用此 skill 时，执行以下流程：
 
-1. **扫描改动**：执行 `git status` 和 `git diff` 分析当前仓库的所有修改。
-2. **识别功能块**：根据改动文件路径和内容，识别出逻辑上相互独立的功能块（如：驱动的独立修改、组件的独立修改、BSP 的独立修改、跨文件的同类修改等）。
-3. **用户确认**：展示识别出的功能块列表，供用户确认或调整分块方式。
-4. **确认验证**：为每个功能块列出已运行或建议运行的验证命令与结果。
-5. **生成消息**：为每个功能块生成 commit message。
-6. **可选提交**：仅当用户明确要求实际提交时，对每个功能块依次执行：
+1. **扫描改动**：执行 `git status` 和 `git diff`（包括未跟踪文件）分析当前仓库的所有修改。
+2. **识别功能块**：根据改动文件路径和内容，识别出逻辑上相互独立的功能块（如：驱动的独立修改、组件的独立修改、BSP 的独立修改、跨文件的同类修改等），并展示识别结果供用户确认或调整。
+3. **选择提交方式（必须询问）**：生成或执行提交前，必须询问用户选择提交方式，例如：
+   - **分块逐块确认**：每块生成 commit message 后先展示并等待用户确认，确认后再执行该块的 `git add` 和 `git commit`，然后继续下一块。
+   - **分块直接提交**：用户确认分块方案后，按顺序自动完成所有功能块的 `git add` 和 `git commit`，中途不再逐块询问。
+   - **其他方式**：按用户指定的方式执行，例如合并为单个提交、仅生成 message 不提交、或只提交指定功能块等。
+   未得到用户明确选择前，不得执行任何提交。
+4. **提交前分支检查（必须执行）**：
+   - 执行 `git branch --show-current` 查看当前分支，并确认远端默认分支（通常为 `main` 或 `master`，可用 `git symbolic-ref refs/remotes/origin/HEAD` 核实）。
+   - 若当前位于主干分支：
+     - 明确提示用户当前位于主干分支（给出分支名）。
+     - 询问用户是确认直接在主干提交，还是创建新分支后提交。
+     - **推荐**创建非主干分支后提交，例如 `feature/<topic>`、`fix/<topic>`、`skills/<topic>`，并遵循仓库既有命名习惯；用户确认后执行 `git switch -c <branch>`。
+     - 未经用户明确同意，不得在主干分支上执行 `git commit`。
+   - 若非主干分支，继续后续流程。
+5. **确认验证**：为每个功能块列出已运行或建议运行的验证命令与结果。
+6. **生成消息**：为每个功能块生成 commit message。
+7. **执行提交**：按第 3 步选定的方式执行：
    - `git add <该块涉及的文件>`
    - 默认使用 `git commit -m "<message>"`
    - 仅当用户或仓库规则要求签名提交时，使用 `git commit -S -m "<message>"`
-7. **完成报告**：汇总本次消息建议或已创建 commit 及其描述。
+8. **完成报告**：汇总本次消息建议或已创建 commit 及其描述；若提交位于非主干分支，提示后续步骤：`git push -u origin <branch>`，然后通过 PR/MR 发起 review，评审通过后再合并。
+
+> 若用户选择在主干分支提交，应在执行前再次提醒风险并记录用户已确认。
 
 ## Guidelines
 
@@ -77,4 +108,6 @@ dma 回调未连接到 rt-thread 驱动框架的完成函数。
 - 本次修改涉及的主要文件或模块名。
 - 修改背景及原因。
 - 测试验证方法。
+- 期望的提交方式（分块逐块确认、分块直接提交，或其他方式）与目标分支；
+  若未提供，skill 会主动询问。
 - **重要**：若修改涉及多个独立功能块，请明确告知每个块对应的文件或模块，以便分块提交。

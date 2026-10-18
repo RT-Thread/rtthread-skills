@@ -1,9 +1,21 @@
 ---
 name: rtthread-git-rebase
-description: Use when rebasing RT-Thread work onto latest upstream master and cleaning unmerged local commits into a clear patch series.
+description: >-
+  Use only when the user explicitly invokes `rtthread-git-rebase` (for example,
+  `$rtthread-git-rebase`), gives a command or instruction to use this skill, or
+  directly names this skill as required. Do not auto-trigger merely because a
+  request concerns rebasing RT-Thread work. When invoked, rebase onto the latest
+  upstream master and clean unmerged commits into a clear patch series.
 ---
 
 # RT-Thread Git Rebase
+
+## Trigger Policy
+
+- 仅当用户显式调用 `$rtthread-git-rebase`、下达使用该 skill 的命令或指令，
+  或直接点名要求使用 `rtthread-git-rebase` 时，才执行本 skill。
+- 即使请求内容与 RT-Thread rebase 或提交整理完全匹配，只要没有上述显式要求，
+  也不得自动调用本 skill。
 
 ## Role
 

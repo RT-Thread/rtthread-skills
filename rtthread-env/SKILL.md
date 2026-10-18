@@ -1,9 +1,22 @@
 ---
 name: rtthread-env
-description: Use when installing, upgrading, activating, or troubleshooting RT-Thread Env, Env scripts, packages index, Python venv, or EBuild/SCons project and component scripts for RT-Thread projects.
+description: >-
+  Use only when the user explicitly invokes `rtthread-env` (for example,
+  `$rtthread-env`), gives a command or instruction to use this skill, or
+  directly names this skill as required. Do not auto-trigger merely because a
+  request concerns RT-Thread Env or builds. When invoked, install, upgrade,
+  activate, or troubleshoot Env, packages, Python venv, and EBuild/SCons
+  scripts.
 ---
 
 # RT-Thread Env
+
+## Trigger Policy
+
+- 仅当用户显式调用 `$rtthread-env`、下达使用该 skill 的命令或指令，或直接
+  点名要求使用 `rtthread-env` 时，才执行本 skill。
+- 即使请求内容与 RT-Thread Env、packages 或 EBuild/SCons 完全匹配，只要
+  没有上述显式要求，也不得自动调用本 skill。
 
 ## Role
 
